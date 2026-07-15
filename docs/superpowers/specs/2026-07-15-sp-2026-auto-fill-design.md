@@ -57,8 +57,10 @@
 │   ┌─ models/sp_change_2026.parse_requirement_xlsx(gg_xlsx)            │
 │   │    → 解析 A-H 列 → 过滤 E ∈ {自动搜索, 自动总结} → 6 字段元组     │
 │   │                                                                   │
-│   ├─ for each target (row, template_name, f_process_hint):            │
-│   │   ├─ sp_data_menu('c') → menu (iDSTE MCP)                        │
+│   ├─ sp_dimension() → 'c' (调 MCP, loop 外只一次)
+│   ├─ sp_data_menu('c') → menu (调 MCP, loop 外缓存一次)
+
+│   ├─ for each target (row, template_name, f_process_hint):
 │   │   ├─ resolve_table_key(template_name, menu)                        │
 │   │   │    → 按"主模板 sheet 名去'表'字后，含目标关键字"匹配第一条     │
 │   │   ├─ sp_data('c', table_key, '2025') → baseline_2025 (iDSTE MCP)  │
@@ -140,7 +142,7 @@ def parse_requirement_xlsx(path: str) -> list[RequirementRow]:
 ```python
 # 2.2 试跑
 type SheetCells = dict[str, str]   # {"B4": "...", "B5": "...", ..., "B9": "..."}
-# 未来扩 6.1/6.2 时: {"D2": "2026 营收目标", "E2": "2027 营收目标", ...}
+# 未来扩 6.1/6.2 (Y1/Y2/Y3 多年型) 时: {"D2": "2026 营收目标", "E2": "2027 营收目标", ...}  # 单独 spec
 ```
 
 ### 5.3 单次 run 输出
