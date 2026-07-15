@@ -77,7 +77,7 @@ def _master_template_sheet(output_template: str, available_sheets: list[str] | N
             if chunk in n and len(chunk) > best_len:
                 best = name
                 best_len = len(chunk)
-            break
+                break
     return best if best is not None else s
 
 
@@ -427,10 +427,29 @@ def run_sp_change_2026(
 # ============================================================
 # __main__: 2.2 试跑
 # ============================================================
+def _test_master_template_sheet_chunk_fallback() -> None:
+    """回归测试: 长 chunk 不匹配时, 应 fallback 到短 chunk (验证 break 位置).
+
+    构造 output_template='2.7 雷达图分析(雷达图)' -> chunks=['雷达图分析'(5), '雷达图'(3)]
+    (按长度降序). candidate='雷达图数据' 不含长 chunk '雷达图分析', 但含短 chunk '雷达图'.
+    旧 bug (break 在 if 外): 只试最长 chunk, 不匹配即跳出 -> 该候选被跳过, 返回原模板名.
+    修复后 (break 在 if 内): 长 chunk 不匹配则继续试短 chunk -> 命中 '雷达图', 返回候选.
+    """
+    got = _master_template_sheet(
+        "2.7 雷达图分析(雷达图)",
+        available_sheets=["雷达图数据"],
+    )
+    assert got == "雷达图数据", f"期望 '雷达图数据', 实际 {got!r}"
+    print("[test] _master_template_sheet chunk fallback: PASS")
+
+
 if __name__ == "__main__":
     import sys
 
     target = sys.argv[1] if len(sys.argv) > 1 else "2.2 行业趋势分析表"
+    if target == "test":
+        _test_master_template_sheet_chunk_fallback()
+        sys.exit(0)
     gg_path = env("GG_XLSX_PATH") or \
         r"D:\Desktop\gg\战略规划SP变更需求-6.5 版（产品需求沟通确认 2.0）.xlsx"
 
