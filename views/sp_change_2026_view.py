@@ -16,10 +16,7 @@ from controllers import sp_change_2026_controller as sp2026_ctrl
 
 
 # 驱动文件默认路径: 优先读 .env 的 GG_XLSX_PATH, 否则用桌面 gg/ 子目录
-DEFAULT_GG_PATH = env("GG_XLSX_PATH") or os.path.join(
-    os.path.expanduser("~"), "Desktop", "gg",
-    "战略规划SP变更需求-6.5 版（产品需求沟通确认 2.0）.xlsx",
-)
+DEFAULT_GG_PATH = env("GG_XLSX_PATH") or r"D:\Desktop\gg\战略规划SP变更需求-6.5 版（产品需求沟通确认 2.0）.xlsx"
 
 
 def render_sp_change_2026_form(template_path: str):
