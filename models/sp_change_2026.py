@@ -78,7 +78,9 @@ def resolve_table_key(template_name: str, menu, keyword: str | None = None) -> s
        候选得分 = 最长 chunk 长度。取所有候选中最高分。这避免短通用 chunk 如 "分析"
        误匹配 (例: "2.1 宏观环境分析(PESTEL分析)表" 不会误匹配到 "行业趋势分析" -- 因为
        "宏观环境分析"(6字) 得分高于 "分析"(2字))。
-    2. 评分无命中时, fallback 到完整 keyword 包含。
+    2. 评分无命中时, 用 CJK 字符集重叠打分: 候选得分 = 候选 name 中出现的
+       normalized CJK 字符数 (去重)。处理 MCP name 用"/"分隔的场景 (如"看行业/趋势"
+       对应 template "2.2 行业趋势分析": 行/业/趋/势 4 字命中)。
     3. 仍无命中 -> ValueError。
     """
     candidates = idste._find_table_keys(menu)
@@ -107,11 +109,22 @@ def resolve_table_key(template_name: str, menu, keyword: str | None = None) -> s
     if best_key is not None:
         return best_key
 
-    # --- 2. fallback: 完整 keyword 包含 ---
-    for c in candidates:
-        cname = re.sub(r"\s+", "", c.get("name") or "")
-        if keyword and keyword in cname:
-            return c["table_key"]
+    # --- 2. fallback: CJK 字符集重叠打分 (处理 name 用"/"等分隔的场景) ---
+    norm_cjk = set(re.findall(r"[一-鿿]", normalized))
+    if norm_cjk:
+        # 阈值: 至少命中 normalized 一半的 CJK 字符 (防"分析"等公共字误匹配)
+        threshold = max(2, len(norm_cjk) // 2)
+        best_key = None
+        best_score = 0
+        for c in candidates:
+            cname = c.get("name") or ""
+            cand_cjk = set(re.findall(r"[一-鿿]", cname))
+            score = len(norm_cjk & cand_cjk)  # 交集大小
+            if score >= threshold and score > best_score:
+                best_score = score
+                best_key = c["table_key"]
+        if best_key is not None:
+            return best_key
 
     raise ValueError(
         f"主模板 sheet {template_name!r} (normalized={normalized!r}, "

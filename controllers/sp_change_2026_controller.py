@@ -211,6 +211,7 @@ def run_sp_change_2026(
     prompts_module=None,
     sp_change_2026_module=None,
     xlsx_exporter_module=None,
+    enable_web_search: bool = True,
     verbose: bool = True,
 ) -> dict:
     """SP 2026 端到端编排: 驱动文件 -> MCP 2025 基线 -> LLM + web_search -> 写主模板副本。
@@ -288,9 +289,12 @@ def run_sp_change_2026(
     full_tool_map: dict = {}
     for name, fn in dict(tool_map).items():
         full_tool_map[name] = _make_counting_wrapper(name, fn, tool_call_stats)
-    for name, fn in websearch.TOOL_MAP.items():
-        full_tool_map[name] = _make_counting_wrapper(name, fn, tool_call_stats)
-    tools_schema = [websearch.WEB_SEARCH_TOOL_SCHEMA["function"]]
+    if enable_web_search:
+        for name, fn in websearch.TOOL_MAP.items():
+            full_tool_map[name] = _make_counting_wrapper(name, fn, tool_call_stats)
+        tools_schema = [websearch.WEB_SEARCH_TOOL_SCHEMA["function"]]
+    else:
+        tools_schema = []  # 不暴露 web_search; LLM 直接基于 few-shot 生成
 
     # ---- 4.5 加载主模板 sheet 名一次 (供 mt_sheet 模糊查) ----
     _tpl_wb = load_workbook(template_xlsx_path, read_only=True)
@@ -347,15 +351,18 @@ def run_sp_change_2026(
             user_msg = (
                 f"按上面规则生成 {year} 年【{mt_sheet}】的 "
                 f"{len(row_labels)} 个维度内容。"
+                + ("" if enable_web_search
+                   else "（注: web_search 不可用, 直接基于 2025 few-shot + 你的行业知识生成 2026 预测, 不要反复尝试联网）")
             )
             if verbose:
                 print(f"[sp-2026] -> {mt_sheet}: tk={tk}, dims={len(row_labels)}, "
-                      f"baseline={len(baseline_text)}字, prompt={len(system_prompt)}字")
+                      f"baseline={len(baseline_text)}字, prompt={len(system_prompt)}字, "
+                      f"web_search={'on' if enable_web_search else 'off'}")
 
-            # 6.5 LLM agent loop (web_search 工具)
+            # 6.5 LLM agent loop (web_search 工具; 关时 LLM 直接出最终答案)
             final_text = llm_client.run_agent_loop(
                 system_prompt, user_msg, full_tool_map, tools_schema,
-                max_turns=8, verbose=verbose,
+                max_turns=12 if enable_web_search else 2, verbose=verbose,
                 max_tokens=2000, final_max_tokens=12288,
                 enable_thinking=False, final_enable_thinking=True,
             )
@@ -450,17 +457,20 @@ if __name__ == "__main__":
     if target == "test":
         _test_master_template_sheet_chunk_fallback()
         sys.exit(0)
+    # --no-web 显式关 web_search (网络封锁时用)
+    enable_web_search = "--no-web" not in sys.argv
     gg_path = env("GG_XLSX_PATH") or \
         r"D:\Desktop\gg\战略规划SP变更需求-6.5 版（产品需求沟通确认 2.0）.xlsx"
 
     print("=" * 60)
-    print(f"SP 2026 自动填写: {target}")
+    print(f"SP 2026 自动填写: {target}  (web_search={'on' if enable_web_search else 'off'})")
     print(f"驱动文件: {gg_path}")
     print("=" * 60)
 
     result = run_sp_change_2026(
         gg_xlsx_path=gg_path,
         target_sheet_names=[target],
+        enable_web_search=enable_web_search,
         verbose=True,
     )
 
