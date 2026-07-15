@@ -71,7 +71,16 @@ def _normalize_template_name(name: str) -> str:
 
 
 def resolve_table_key(template_name: str, menu, keyword: str | None = None) -> str:
-    """把 D 列里的"输出表格/图形模版"名解析为 MCP table_key。"""
+    """把 D 列里的"输出表格/图形模版"名解析为 MCP table_key。
+
+    匹配策略 (按优先级):
+    1. 评分匹配: 对每个候选, 找其 name 包含的**最长** CJK chunk (来自 template_name),
+       候选得分 = 最长 chunk 长度。取所有候选中最高分。这避免短通用 chunk 如 "分析"
+       误匹配 (例: "2.1 宏观环境分析(PESTEL分析)表" 不会误匹配到 "行业趋势分析" -- 因为
+       "宏观环境分析"(6字) 得分高于 "分析"(2字))。
+    2. 评分无命中时, fallback 到完整 keyword 包含。
+    3. 仍无命中 -> ValueError。
+    """
     candidates = idste._find_table_keys(menu)
     if not candidates:
         raise ValueError(
@@ -82,12 +91,23 @@ def resolve_table_key(template_name: str, menu, keyword: str | None = None) -> s
     if keyword is None:
         keyword = "".join(re.findall(r"[一-鿿]+", normalized))
 
+    # --- 1. 评分匹配 (longest CJK chunk wins; 防短通用 chunk 误匹配) ---
+    # chunks 去重 + 按长度降序, 保证每个候选的"最长匹配"是第一个找到的
+    chunks = sorted(set(re.findall(r"[一-鿿]{2,}", normalized)), key=len, reverse=True)
+    best_key: str | None = None
+    best_len = 0
     for c in candidates:
         cname = re.sub(r"\s+", "", c.get("name") or "")
-        for chunk in re.findall(r"[一-鿿]{2,}", normalized):
+        for chunk in chunks:  # 已降序, 第一个匹配即该候选的最长匹配
             if chunk in cname:
-                return c["table_key"]
+                if len(chunk) > best_len:
+                    best_len = len(chunk)
+                    best_key = c["table_key"]
+                break  # 该候选最长匹配已找, 看下一个候选
+    if best_key is not None:
+        return best_key
 
+    # --- 2. fallback: 完整 keyword 包含 ---
     for c in candidates:
         cname = re.sub(r"\s+", "", c.get("name") or "")
         if keyword and keyword in cname:
@@ -115,7 +135,46 @@ if __name__ == "__main__":
 
     print()
     print("=" * 60)
-    print("== [2] resolve_table_key 在线测试 (需 VPN/iDSTE) ==")
+    print("== [2] resolve_table_key 离线 mock 测试 (防短 chunk 误匹配) ==")
+    # mock menu 同时含 "宏观环境分析" 和 "行业趋势分析" 候选。
+    # 旧算法 (任意 chunk 命中即返回) 会因 chunk "分析" 通用, 把
+    # "2.1 宏观环境分析(PESTEL分析)表" 误匹配到 "行业趋势分析" (若其排在前面)。
+    # 新算法 (longest chunk 评分) 应选 "宏观环境分析" (6 字) 而非 "分析" (2 字)。
+    mock_menu = {
+        "tables": [
+            {"table_key": "tk_industry", "name": "2.2 行业趋势分析"},  # 故意放第一
+            {"table_key": "tk_pestel", "name": "2.1 宏观环境分析"},
+            {"table_key": "tk_market", "name": "2.3 市场容量分析"},
+        ]
+    }
+    # case 1: PESTEL 表不应误匹配到行业趋势 (核心防回归测试)
+    try:
+        tk = resolve_table_key("2.1 宏观环境分析(PESTEL分析)表", mock_menu)
+        assert tk == "tk_pestel", f"期望 tk_pestel, 实际 {tk}"
+        print(f"  [PASS] '2.1 宏观环境分析(PESTEL分析)表' -> {tk} (未误匹配到行业趋势)")
+    except AssertionError as e:
+        print(f"  [FAIL] {e}")
+    except ValueError as e:
+        print(f"  [FAIL] 未找到: {e}")
+
+    # case 2: 正常匹配仍工作
+    try:
+        tk = resolve_table_key("2.2 行业趋势分析表", mock_menu)
+        assert tk == "tk_industry", f"期望 tk_industry, 实际 {tk}"
+        print(f"  [PASS] '2.2 行业趋势分析表' -> {tk}")
+    except (AssertionError, ValueError) as e:
+        print(f"  [FAIL] {e}")
+
+    # case 3: 无匹配应抛 ValueError
+    try:
+        resolve_table_key("9.9 不存在的表", mock_menu)
+        print(f"  [FAIL] 应抛 ValueError 但没抛")
+    except ValueError:
+        print(f"  [PASS] 无匹配正确抛 ValueError")
+
+    print()
+    print("=" * 60)
+    print("== [3] resolve_table_key 在线测试 (需 VPN/iDSTE) ==")
     if len(sys.argv) > 1 and sys.argv[1] == "--online":
         menu = idste.sp_data_menu("c")
         for r in rows[:3]:
