@@ -330,12 +330,17 @@ def run_sp_change_2026(
             baseline_text = _sp_data_to_baseline_text(baseline_2025)
 
             # 6.3 读主模板 A 列维度标签
+            # 结果列/起始行参数化 (label_col=A 读维度; result_col=B 写结果)
+            # 沿用同一对变量到 prompt builder + 缺 cell 回填, 保证扩展非 B 列 sheet 时一致
+            label_col = "A"
+            result_col = "B"
+            result_start_row = 4
             row_labels = _read_row_labels_from_template(
-                template_xlsx_path, mt_sheet, target_col="A", start_row=4,
+                template_xlsx_path, mt_sheet, target_col=label_col, start_row=result_start_row,
             )
             if not row_labels:
                 raise ValueError(
-                    f"主模板 sheet {mt_sheet!r} A 列从 row 4 起无维度标签"
+                    f"主模板 sheet {mt_sheet!r} {label_col} 列从 row {result_start_row} 起无维度标签"
                 )
 
             # 6.4 build prompt
@@ -345,8 +350,8 @@ def run_sp_change_2026(
                 baseline_2025_json=baseline_text,
                 process_hint=req.process_hint,
                 year=year,
-                target_col="B",
-                start_row=4,
+                target_col=result_col,
+                start_row=result_start_row,
             )
             user_msg = (
                 f"按上面规则生成 {year} 年【{mt_sheet}】的 "
@@ -374,7 +379,7 @@ def run_sp_change_2026(
                     f"LLM 最终回答解析为空 dict, final_text 长度={len(final_text)}"
                 )
             for i in range(len(row_labels)):
-                coord = f"B{4 + i}"
+                coord = f"{result_col}{result_start_row + i}"
                 if coord not in cells:
                     cells[coord] = ""
                     if verbose:
