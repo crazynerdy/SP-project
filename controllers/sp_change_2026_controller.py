@@ -31,6 +31,7 @@ from models import websearch
 from models import sp_change_2026 as sp_change_2026_mod
 from models import xlsx_exporter
 from core.envutil import env
+from context.strategy_context_builder import StrategyContextBuilder
 
 
 # ============================================================
@@ -268,17 +269,24 @@ def run_sp_change_2026(
         print(f"[sp-2026] 待填 {len(requirements)} 个 sheet: "
               f"{[r.output_template for r in requirements]}")
 
-    # ---- 3. loop 外一次: sp_dimension + sp_data_menu (避免 N+1 MCP) ----
+    # ---- 3. loop 外一次: dimension + menu 走 ContextBuilder (失败 fallback 直接 MCP) ----
     if verbose:
-        print(f"[sp-2026] 拉 dimension + menu (loop 外一次)...")
+        print(f"[sp-2026] 拉 dimension + menu (loop 外一次, 走 ContextBuilder)...")
+    ctx_builder = StrategyContextBuilder(dim_info="c", year=str(year - 1))
     try:
-        dim_resp = idste.sp_dimension()
-        dim = _pick_dim_info(dim_resp)
+        strategy_ctx = ctx_builder.build(target_tables=[])  # 只拉 dimension+menu，不拉全量表
+        dim = strategy_ctx.dim_info
+        # Build menu from available_tables (same format as idste._find_table_keys returns)
+        menu = strategy_ctx.available_tables  # list of {table_key, name}
     except Exception as e:
         if verbose:
-            print(f"[sp-2026] sp_dimension 失败, fallback dim='c': {e}")
-        dim = "c"
-    menu = idste.sp_data_menu(dim)
+            print(f"[sp-2026] ContextBuilder 失败, fallback 到直接 MCP: {e}")
+        try:
+            dim_resp = idste.sp_dimension()
+            dim = _pick_dim_info(dim_resp)
+        except Exception:
+            dim = "c"
+        menu = idste.sp_data_menu(dim)
     if verbose:
         print(f"[sp-2026] dim={dim!r}, menu 候选 {len(idste._find_table_keys(menu))} 个表")
 
@@ -325,8 +333,18 @@ def run_sp_change_2026(
             # 6.1 resolve_table_key -> MCP table_key
             tk = sp_change_2026_module.resolve_table_key(req.output_template, menu)
 
-            # 6.2 拉 2025 基线 (few-shot)
-            baseline_2025 = idste.sp_data(dim, tk, str(year - 1))
+            # 6.2 拉 2025 基线 (few-shot): 优先 ContextBuilder 缓存, miss/失败 时 fallback 直 MCP
+            try:
+                sheet_ctx = ctx_builder.get_sheet_context(mt_sheet)
+            except Exception as e:
+                if verbose:
+                    print(f"[sp-2026]    ContextBuilder get_sheet_context 异常, fallback MCP: {e}")
+                sheet_ctx = {}
+            if not sheet_ctx:
+                # Fallback: direct MCP call if ContextBuilder cache miss
+                baseline_2025 = idste.sp_data(dim, tk, str(year - 1))
+            else:
+                baseline_2025 = sheet_ctx
             baseline_text = _sp_data_to_baseline_text(baseline_2025)
 
             # 6.3 读主模板 A 列维度标签
