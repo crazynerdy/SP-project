@@ -85,11 +85,10 @@ class StrategyContextBuilder:
             ctx.available_tables = []
 
         # 3) 拉数据表
-        table_names = target_tables or [t.get("name", t["table_key"]) for t in ctx.available_tables]
         for tbl_info in ctx.available_tables:
             tk = tbl_info["table_key"]
             name = tbl_info.get("name", tk)
-            if target_tables and name not in target_tables:
+            if target_tables is not None and name not in target_tables:
                 # 模糊匹配（容错空格/尾"表"字）
                 matched = any(
                     name.strip().rstrip("表") == t.strip().rstrip("表")
