@@ -28,26 +28,34 @@ import shutil
 from openpyxl import load_workbook
 
 
-def fill_template(json_data, template_path, output_path):
+def fill_template(json_data, template_path, output_path=None):
     """把 LLM 输出写入模板副本。
 
     Args:
         json_data: LLM 输出的 xlsx-ready dict
         template_path: 模板 xlsx 路径
-        output_path: 输出 .xlsx 路径
+        output_path: 输出 .xlsx 路径；为 None 时返回 bytes（内存模式，不写盘）
 
     Returns:
         dict: {filled: 写成功的 sheet 数, missing: 没匹配的 sheet 名, output_path}
+              output_path 在内存模式下为 None, 额外含 "xlsx_bytes" 字段
     """
+    import io
     if not os.path.exists(template_path):
         raise FileNotFoundError(f"模板不存在: {template_path}")
     if "sheets" not in json_data or not json_data["sheets"]:
         raise ValueError("json_data.sheets 为空，没法填表")
 
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    shutil.copyfile(template_path, output_path)
+    memory_mode = output_path is None
+    if not memory_mode:
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
-    wb = load_workbook(output_path)
+    buf = io.BytesIO()
+    with open(template_path, "rb") as f:
+        buf.write(f.read())
+    buf.seek(0)
+
+    wb = load_workbook(buf)
     # 建 strip 后名字 -> 原始 sheet 名映射，容错模板里的尾空格/不规则空格
     # （如模板 "5.4 主要风险分析 " 带尾空格，LLM 输出 "5.4 主要风险分析" 无尾空格）
     available = {name.strip(): name for name in wb.sheetnames}
@@ -86,24 +94,35 @@ def fill_template(json_data, template_path, output_path):
         filled.append(sn)
 
     try:
-        wb.save(output_path)
+        if memory_mode:
+            buf.seek(0)
+            wb.save(buf)
+            xlsx_bytes = buf.getvalue()
+        else:
+            wb.save(output_path)
     except PermissionError as e:
         raise PermissionError(
             f"xlsx 保存失败（文件可能被 Excel 占用）: {output_path} - {e}"
         ) from e
     except Exception as e:
-        raise RuntimeError(f"xlsx 保存失败: {output_path} - {e}") from e
+        path_info = output_path or "<memory>"
+        raise RuntimeError(f"xlsx 保存失败: {path_info} - {e}") from e
+    finally:
+        buf.close()
 
     if missing:
         import warnings
         warnings.warn(f"以下 sheet 名在模板里找不到（可能拼写有误）: {missing}")
 
-    return {
+    result = {
         "filled": filled,
         "missing": missing,
         "output_path": output_path,
         "filled_count": len(filled),
     }
+    if memory_mode:
+        result["xlsx_bytes"] = xlsx_bytes
+    return result
 
 
 def _clear_data_rows(ws):

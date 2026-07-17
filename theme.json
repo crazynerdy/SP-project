@@ -1,0 +1,97 @@
+{
+  "_doc": "PPT 渲染配置：调色板 + 字体 + 布局尺寸。render.js 启动时加载。",
+  "_doc2": "要换品牌（颜色/字体/页面比例）只改这个文件，不用动 render.js。",
+
+  "palette": "Midnight Executive",
+
+  "colors": {
+    "primary":      "1E2761",
+    "primaryLight": "3A4E8C",
+    "accent":       "F59E0B",
+    "secondary":    "CADCFC",
+    "text":         "0A0F2C",
+    "textMute":     "5A6A8A",
+    "textSoft":     "8DA3C7",
+    "bgLight":      "F5F7FB",
+    "white":        "FFFFFF",
+    "border":       "8DA3C7"
+  },
+
+  "ui": {
+    "_doc": "Streamlit 前端主题色（与 iDSTE MCP Server 管理后台视觉统一）",
+    "sidebar_bg":     "1E3A8A",
+    "sidebar_text":   "FFFFFF",
+    "sidebar_hover":  "172554",
+    "sidebar_active": "DBEAFE",
+    "sidebar_icon":   "93C5FD",
+    "accent":         "7C3AED",
+    "accent_hover":   "6D28D9",
+    "accent_soft":    "EDE9FE",
+    "success":        "22C55E",
+    "success_soft":   "DCFCE7",
+    "bg":             "F8FAFC",
+    "card":           "FFFFFF",
+    "text":           "111827",
+    "text_muted":     "6B7280",
+    "text_soft":      "9CA3AF",
+    "border":         "E5E7EB",
+    "border_light":   "F3F4F6"
+  },
+
+  "font": {
+    "family":        "Microsoft YaHei",
+    "familyNumeric": "Consolas",
+    "sizes": {
+      "hero":        60,
+      "cover":        44,
+      "coverSub":     20,
+      "section":      32,
+      "conclusion":   32,
+      "header":       24,
+      "body":         18,
+      "label":        18,
+      "small":        14,
+      "tiny":         12,
+      "micro":        10
+    }
+  },
+
+  "layout": {
+    "_doc": "页面比例 16:9 (13.33 x 7.5 inch)，所有坐标基于此",
+
+    "slideW":         13.33,
+    "slideH":          7.50,
+    "margin":          0.50,
+    "gutter":          0.30,
+    "headerH":         0.90,
+    "contentTop":      1.20,
+    "contentW":       12.33,
+    "contentH":        5.80,
+    "colGap":          0.13,
+    "accentBarW":      0.40,
+    "headerAccentW":   0.15,
+    "sectionLineW":    1.50,
+    "sectionLineH":    0.08,
+    "coverTitleY":     2.40,
+    "coverSubY":       4.10,
+    "footerY":         6.30,
+    "colHeaderH":      0.55,
+    "colBodyTop":      1.95,
+    "tableRowH":       0.70,
+    "borderPt":        0.50,
+    "chartLegendSize": 12,
+    "chartAxisSize":   11
+  },
+
+  "image_zone": {
+    "1": { "x": 0.5, "y": 4.5, "w": 4.0, "h": 2.5 },
+    "2": { "x": 4.5, "y": 4.5, "w": 4.0, "h": 2.5 },
+    "3": { "x": 8.5, "y": 4.5, "w": 4.0, "h": 2.5 },
+    "4": { "x": 0.5, "y": 2.0, "w": 4.0, "h": 2.5 },
+    "5": { "x": 4.5, "y": 2.0, "w": 4.0, "h": 2.5 },
+    "6": { "x": 8.5, "y": 2.0, "w": 4.0, "h": 2.5 },
+    "7": { "x": 0.5, "y": 0.5, "w": 4.0, "h": 1.5 },
+    "8": { "x": 4.5, "y": 0.5, "w": 4.0, "h": 1.5 },
+    "9": { "x": 8.5, "y": 0.5, "w": 4.0, "h": 1.5 }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "sp-analysis-pptx",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Render slide-spec JSON to .pptx via pptxgenjs (SP Analysis Report Agent)",
+  "main": "render.js",
+  "scripts": {
+    "render": "node render.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}

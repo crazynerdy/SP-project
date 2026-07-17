@@ -1,0 +1,147 @@
+{
+  "_doc": "slide-spec 单一真相源。prompts.py 用它生成 system prompt；render.js 用它校验 layout 名字。",
+  "_doc2": "加新 layout：在这里加一段，prompts 自动出现，render.js 只需在 HANDLERS 注册 handler。",
+
+  "version": "1.0",
+
+  "layouts": {
+    "title": {
+      "description": "封面页",
+      "fields": {
+        "title":    "string, 必填，≤30字",
+        "subtitle": "string, 可选"
+      }
+    },
+    "section": {
+      "description": "章节分隔页（深色大色块）",
+      "fields": {
+        "title": "string, 必填"
+      }
+    },
+    "bullets": {
+      "description": "要点列表页",
+      "fields": {
+        "title":   "string, 必填，≤20字",
+        "bullets": "string[], 3-6 条，每条 ≤20字"
+      }
+    },
+    "two_col": {
+      "description": "双栏对比页（左深蓝/右橙）",
+      "fields": {
+        "title":         "string, 必填，≤20字",
+        "left_title":    "string, 必填",
+        "left_bullets":  "string[], 2-4 条",
+        "right_title":   "string, 必填",
+        "right_bullets": "string[], 2-4 条"
+      }
+    },
+    "table": {
+      "description": "表格页",
+      "fields": {
+        "title":        "string, 必填，≤20字",
+        "table.headers": "string[], 必填，≤5 列",
+        "table.rows":    "string[][], 必填，≤8 行"
+      }
+    },
+    "chart": {
+      "description": "图表页",
+      "fields": {
+        "title":              "string, 必填",
+        "chart_type":         "string: 'bar' | 'pie' | 'line'，默认 'bar'",
+        "chart_data.labels":  "string[], 类目轴",
+        "chart_data.series":  "{name, values}[]，每个 series 一组数据"
+      }
+    },
+    "big_stat": {
+      "description": "大数字页（120pt 橙色大数字）",
+      "fields": {
+        "title":       "string, 必填，≤20字",
+        "stat":        "string, 必填，核心数字如 '72%' / '1.2亿'",
+        "description": "string, 1 句说明"
+      }
+    },
+    "conclusion": {
+      "description": "结论页（深色 + 橙色色条）",
+      "fields": {
+        "title":     "string, 默认 '结论'",
+        "takeaways": "string[], 3-5 条"
+      }
+    }
+  },
+
+  "rules": [
+    "总页数 8-15 页",
+    "第 1 页必须是 title，最后一页必须是 conclusion",
+    "在主要数据分组前用 1-2 页 section 分隔（如'一、数据详析'前放一页 section）",
+    "纯 bullets 不得连续超过 2 页，每页尽量配 chart/table/big_stat 等视觉元素",
+    "所有数字、结论、表格内容必须从给定报告中提取，不要新增数字",
+    "标题简洁（≤20字），bullets 每条 1 行不超过 20 字",
+    "不要在 JSON 里指定任何颜色/字体/样式字段（由 render.js 决定）"
+  ],
+
+  "render_rules": {
+    "table_max_cols":     5,
+    "table_max_rows":     8,
+    "slides_min":         8,
+    "slides_max":        15,
+    "bullets_per_page":   6
+  },
+
+  "image_field": {
+    "description": "可选字段。AI 生成的配图配置，Qwen-Image 集成使用。",
+    "fields": {
+      "prompt":    { "type": "string", "required": true, "desc": "喂给 Qwen-Image 的 prompt" },
+      "zone":      { "type": "int",    "required": true, "enum": [1,2,3,4,5,6,7,8,9], "desc": "9 宫格位置（numpad 布局）" },
+      "aspect":    { "type": "string", "required": true, "enum": ["16:9", "4:3", "1:1", "3:4"] },
+      "style":     { "type": "string", "required": true, "enum": ["minimal", "photographic", "illustration", "diagram"] },
+      "required":  { "type": "bool",   "required": true, "desc": "true=失败 raise，false=失败跳过" }
+    }
+  },
+
+  "tool_hints_field": {
+    "description": "可选字段。给 LLM 提示该 sheet 必须先调哪些 sp_data 表或 web_search 关键词。",
+    "fields": {
+      "tool_hints":          { "type": "array<string>", "required": false },
+      "required_tool_calls": { "type": "int",           "required": false, "default": 1 }
+    }
+  },
+
+  "sheet_presets": {
+    "1.1 业绩差距分析":      { "tool_hints": ["业绩差距", "责任人"],            "required_tool_calls": 2 },
+    "1.2 机会差距分析":      { "tool_hints": ["机会差距", "战略机会"],          "required_tool_calls": 2 },
+    "2.1 宏观环境分析":      { "tool_hints": ["PESTEL", "宏观", "web_search"],  "required_tool_calls": 4 },
+    "2.2 行业趋势分析":      { "tool_hints": ["行业趋势", "web_search"],        "required_tool_calls": 3 },
+    "2.3 市场容量分析":      { "tool_hints": ["市场容量", "TAM", "web_search"], "required_tool_calls": 3 },
+    "2.4 客户购买行为":      { "tool_hints": ["客户行为", "细分市场"],          "required_tool_calls": 2 },
+    "2.5 业务划分分析":      { "tool_hints": ["业务划分", "BU/PL"],            "required_tool_calls": 2 },
+    "2.6 整体对手分析":      { "tool_hints": ["对手分析", "市场份额", "web_search"], "required_tool_calls": 6 },
+    "2.7 主要对手分析":      { "tool_hints": ["主要对手", "对比", "web_search"],     "required_tool_calls": 5 },
+    "2.8 雷达图分析":        { "tool_hints": ["雷达图", "能力评估"],           "required_tool_calls": 1 },
+    "2.9 自身分析":          { "tool_hints": ["自身能力"],                     "required_tool_calls": 1 },
+    "2.10 五看分析":         { "tool_hints": ["五看", "行业"],                  "required_tool_calls": 1 },
+    "2.11 SWOT分析":         { "tool_hints": ["SWOT"],                          "required_tool_calls": 1 },
+    "2.12 TOPN 行业":        { "tool_hints": ["TOPN", "行业排名"],              "required_tool_calls": 1 },
+    "2.13 行业占有率":       { "tool_hints": ["占有率", "市场份额", "web_search"], "required_tool_calls": 2 },
+    "3.1 使命愿景":          { "tool_hints": ["使命愿景"],                     "required_tool_calls": 1 },
+    "3.2 战略地图":          { "tool_hints": ["战略地图"],                     "required_tool_calls": 1 },
+    "3.3 KPI":               { "tool_hints": ["KPI"],                          "required_tool_calls": 1 },
+    "4.1 H123":              { "tool_hints": ["H123", "热点"],                  "required_tool_calls": 1 },
+    "4.2 创新重点":          { "tool_hints": ["创新重点"],                     "required_tool_calls": 1 },
+    "4.3 战略专题":          { "tool_hints": ["战略专题", "关键问题"],          "required_tool_calls": 1 },
+    "4.4 新兴机会":          { "tool_hints": ["新兴机会", "web_search"],        "required_tool_calls": 2 },
+    "5.1 竞争战略":          { "tool_hints": ["竞争战略"],                     "required_tool_calls": 1 },
+    "5.2 中央平台":          { "tool_hints": ["中央平台"],                     "required_tool_calls": 1 },
+    "5.3 业务设计":          { "tool_hints": ["业务设计"],                     "required_tool_calls": 1 },
+    "5.4 主要风险":          { "tool_hints": ["风险", "web_search"],           "required_tool_calls": 2 },
+    "6.1 战略举措":          { "tool_hints": ["战略举措"],                     "required_tool_calls": 1 },
+    "6.2 年度目标":          { "tool_hints": ["年度目标"],                     "required_tool_calls": 1 },
+    "6.3 重点项目":          { "tool_hints": ["重点项目"],                     "required_tool_calls": 1 },
+    "7.1 组织架构":          { "tool_hints": ["组织架构"],                     "required_tool_calls": 1 },
+    "7.2 流程变革":          { "tool_hints": ["流程变革"],                     "required_tool_calls": 1 },
+    "8.1 人才盘点":          { "tool_hints": ["人才盘点"],                     "required_tool_calls": 1 },
+    "8.2 人才规划":          { "tool_hints": ["人才规划"],                     "required_tool_calls": 1 },
+    "9.1 企业文化":          { "tool_hints": ["企业文化"],                     "required_tool_calls": 1 },
+    "9.2 其他资源":          { "tool_hints": ["其他资源"],                     "required_tool_calls": 1 },
+    "10.1 财务预测":         { "tool_hints": ["财务预测"],                     "required_tool_calls": 1 }
+  }
+}

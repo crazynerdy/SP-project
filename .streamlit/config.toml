@@ -1,0 +1,14 @@
+# Streamlit 运行配置。
+# primaryColor 必须与 theme.json 的 ui.accent 保持一致（品牌单一真相源），
+# 这样 radio / checkbox / select 等原生 baseweb 组件自动用品牌紫色；
+# 其余视觉由 ui_theme.py 注入 CSS 覆盖。换品牌色时两处一起改。
+[theme]
+base = "light"
+primaryColor = "#7C3AED"
+backgroundColor = "#F8FAFC"
+secondaryBackgroundColor = "#1E3A8A"
+textColor = "#111827"
+font = "sans serif"
+
+[server]
+headless = true

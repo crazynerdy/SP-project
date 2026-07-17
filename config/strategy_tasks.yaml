@@ -1,0 +1,477 @@
+# Strategy Planning Agent — 37 个 Sheet 的 DAG 配置
+# 自动生成自驱动文件: gg/战略规划SP变更需求-6.5 版（产品需求沟通确认 2.0）.xlsx
+# 字段说明:
+#   sheet_id:     唯一标识 (BLM 模块编号)
+#   sheet_name:   主模板 sheet 名
+#   agent_type:   web_search | synthesis | strategy | null (公司填写, 不调 agent)
+#   depends_on:   前置 sheet_id 列表
+#   mcp_fields:   需要从 MCP 获取的表名/字段
+#   schema_class: Pydantic 模型名 (schemas/sheet_schemas.py)
+#   output_format: cells | json
+#   enabled:      true | false
+#   description:  业务描述 (给 LLM 看)
+#   process_hint: 业务期望分析过程
+#   blm_module:   BLM 模块名
+
+tasks:
+  # ============================================================
+  # 1.x 业绩差距 (2 sheets)
+  # ============================================================
+  - sheet_id: "1.1"
+    sheet_name: "1.1 业绩差距分析"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "回顾业绩差距，分析目标与实际完成情况"
+    process_hint: "公司填写"
+    blm_module: "业绩差距"
+
+  - sheet_id: "1.2"
+    sheet_name: "1.2 差距根因分析"
+    agent_type: null
+    depends_on: ["1.1"]
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "分析业绩差距的根因"
+    process_hint: "公司填写"
+    blm_module: "业绩差距"
+
+  # ============================================================
+  # 2.x 市场洞察 (13 sheets)
+  # ============================================================
+  - sheet_id: "2.1"
+    sheet_name: "2.1 宏观环境分析"
+    agent_type: web_search
+    depends_on: []
+    mcp_fields: ["宏观环境分析"]
+    schema_class: PESTELOutput
+    output_format: json
+    enabled: true
+    description: "PESTEL 宏观环境分析（政治、经济、社会、技术、环境、法律），识别关键机会与威胁"
+    process_hint: "基于「战略规划研究内容」构建分析框架，对照 IDSTE 系统对应模块，搜索最新政策、经济数据、技术趋势等"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.2"
+    sheet_name: "2.2 行业趋势分析"
+    agent_type: web_search
+    depends_on: []
+    mcp_fields: ["行业趋势分析"]
+    schema_class: IndustryTrendOutput
+    output_format: json
+    enabled: true
+    description: "分析公司所在产业链/行业的发展趋势"
+    process_hint: "需参考 IDSTE 系统中的行业趋势数据，结合 web_search 搜索最新行业报告"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.3"
+    sheet_name: "2.3 市场容量分析"
+    agent_type: web_search
+    depends_on: []
+    mcp_fields: ["市场容量分析"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "TAM（Total Available Market）潜在市场容量分析"
+    process_hint: "参考组织架构图，识别各业务线对应的业务领域，分析市场容量（注：IDSTE 目前缺一个指标需补充）"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.4"
+    sheet_name: "2.4 客户需求与行为分析"
+    agent_type: web_search
+    depends_on: []
+    mcp_fields: ["客户需求与行为分析"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "分析不同客户群的购买角色、决策关注点、变化趋势"
+    process_hint: "提取需要分析的对应业务线，由业务线负责人提供该业务线覆盖的目标客户群，再分析客户行为"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.5"
+    sheet_name: "2.5 业务划分分析"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "从公司层面看业务分组，识别各业务线及其产品线"
+    process_hint: "公司填写"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.6"
+    sheet_name: "2.6 竞争对手分析"
+    agent_type: web_search
+    depends_on: ["2.5"]
+    mcp_fields: ["竞争对手分析"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "多维度分析竞争对手的战略、能力、市场份额"
+    process_hint: "业务线负责人需提供对应细分市场的竞争对手信息，公司对比各业务线数据"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.7"
+    sheet_name: "2.7 竞争雷达图"
+    agent_type: synthesis
+    depends_on: ["2.6"]
+    mcp_fields: ["竞争雷达图"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "多维度对比分析竞争对手能力，生成雷达图"
+    process_hint: "业务线负责人需提供对应细分市场的竞争对手数据，区分直接/间接/潜在竞争者"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.8"
+    sheet_name: "2.8 公司能力分析"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "站在业务线角度，分析各维度关键要素、现状和差距"
+    process_hint: "公司填写"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.9"
+    sheet_name: "2.9 五看维度总结"
+    agent_type: synthesis
+    depends_on: ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"]
+    mcp_fields: ["五看总结"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "综合五看维度（宏观、行业、市场、客户、竞争）做归纳总结"
+    process_hint: "综合宏观环境分析、行业趋势、市场容量、客户需求、业务划分、竞争对手、竞争雷达图、公司能力等 7 个维度，归纳五看总结"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.10"
+    sheet_name: "2.10 SWOT分析"
+    agent_type: synthesis
+    depends_on: ["2.9", "2.5", "1.1"]
+    mcp_fields: ["SWOT分析"]
+    schema_class: SWOTOutput
+    output_format: json
+    enabled: true
+    description: "SWOT分析（优势、劣势、机会、威胁），找出外部机会与威胁、内部优势与劣势"
+    process_hint: "综合业务线数据、问题分析、宏观环境、行业趋势、市场容量、客户需求、业务划分、竞争对手、竞争雷达图、公司能力、五看总结，归纳 SWOT"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.11"
+    sheet_name: "2.11 TOPN市场机会分析"
+    agent_type: synthesis
+    depends_on: ["2.9", "2.10", "2.5"]
+    mcp_fields: ["TOPN市场机会"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "结合分析结果，识别 TOP N 市场机会（含吸引力、可行性分析）"
+    process_hint: "综合业务线、问题分析、宏观环境、行业趋势、市场容量、客户需求、业务划分、竞争对手、竞争雷达图、公司能力、五看总结、SWOT，识别 TOPN 市场机会"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.12"
+    sheet_name: "2.12 市场地图MEKKO图"
+    agent_type: synthesis
+    depends_on: ["2.5", "2.11"]
+    mcp_fields: ["市场地图MEKKO"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "基于公司经营业务线，绘制各业务线相关产品的市场占有率图形"
+    process_hint: "基于公司经营业务线，识别各业务线相关产品的市场占有率"
+    blm_module: "市场洞察"
+
+  - sheet_id: "2.13"
+    sheet_name: "2.13 BCG矩阵图"
+    agent_type: synthesis
+    depends_on: ["2.9", "2.10", "2.11", "2.5"]
+    mcp_fields: ["BCG矩阵"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "BCG 矩阵（业务组合分析），按业务增长率和市场份额划分业务"
+    process_hint: "综合业务线、问题分析、宏观环境、行业趋势、市场容量、客户需求、业务划分、竞争对手、竞争雷达图、公司能力、五看总结、SWOT、TOPN市场机会，生成 BCG 矩阵"
+    blm_module: "市场洞察"
+
+  # ============================================================
+  # 3.x 战略意图 (3 sheets)
+  # ============================================================
+  - sheet_id: "3.1"
+    sheet_name: "3.1 使命愿景"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "公司使命、愿景、价值观、定位"
+    process_hint: "公司填写"
+    blm_module: "战略意图"
+
+  - sheet_id: "3.2"
+    sheet_name: "3.2 战略地图"
+    agent_type: strategy
+    depends_on: ["2.9", "3.1"]
+    mcp_fields: ["战略地图"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "基于市场洞察和使命愿景，构建公司中长期战略地图（含 CSF）"
+    process_hint: "基于市场洞察分析结果，结合公司使命愿景，识别公司中长期目标，构建战略地图"
+    blm_module: "战略意图"
+
+  - sheet_id: "3.3"
+    sheet_name: "3.3 公司KPI"
+    agent_type: strategy
+    depends_on: ["3.2"]
+    mcp_fields: ["公司KPI"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "基于公司中长期目标和 CSF，制定公司中长期 KPI 目标"
+    process_hint: "基于公司中长期目标和 CSF，制定公司中长期 KPI 目标"
+    blm_module: "战略意图"
+
+  # ============================================================
+  # 4.x 创新焦点 (4 sheets)
+  # ============================================================
+  - sheet_id: "4.1"
+    sheet_name: "4.1 H123业务"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "公司成熟业务、发展业务、新兴业务的分类"
+    process_hint: "公司填写"
+    blm_module: "创新焦点"
+
+  - sheet_id: "4.2"
+    sheet_name: "4.2 创新重点"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "创新方向分析和重点突破方向"
+    process_hint: "公司填写"
+    blm_module: "创新焦点"
+
+  - sheet_id: "4.3"
+    sheet_name: "4.3 战略专题清单"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "围绕关键战略问题开展专题研究"
+    process_hint: "公司填写"
+    blm_module: "创新焦点"
+
+  - sheet_id: "4.4"
+    sheet_name: "4.4 创新机会分析"
+    agent_type: synthesis
+    depends_on: ["4.1", "4.2", "4.3", "2.5"]
+    mcp_fields: ["创新机会"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "基于市场洞察和创新基础，识别潜在创新机会和价值空间"
+    process_hint: "综合市场洞察、H123 规划、创新重点、战略专题、业务线，识别创新机会"
+    blm_module: "创新焦点"
+
+  # ============================================================
+  # 5.x 业务设计 (4 sheets)
+  # ============================================================
+  - sheet_id: "5.1"
+    sheet_name: "5.1 公司竞争战略"
+    agent_type: strategy
+    depends_on: ["2.9", "3.2", "4.4"]
+    mcp_fields: ["公司竞争战略"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "制定夺取、保持、超越竞争优势的竞争战略"
+    process_hint: "综合市场洞察、战略地图、创新焦点，归纳公司竞争战略方向"
+    blm_module: "业务设计"
+
+  - sheet_id: "5.2"
+    sheet_name: "5.2 职能平台战略"
+    agent_type: strategy
+    depends_on: ["2.9", "3.2", "4.4", "5.1"]
+    mcp_fields: ["职能平台战略"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "构建统一平台实现资源共享和能力复用"
+    process_hint: "综合市场洞察、战略地图、创新焦点、公司竞争战略，结合公司现有业务线和项目，制定职能平台战略"
+    blm_module: "业务设计"
+
+  - sheet_id: "5.3"
+    sheet_name: "5.3 业务设计"
+    agent_type: strategy
+    depends_on: ["2.5", "2.9", "3.2", "4.4", "5.1", "5.2"]
+    mcp_fields: ["业务设计"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "客户选择、价值主张、价值获取、盈利模式、活动范围、战略控制等业务设计要素"
+    process_hint: "综合各业务线、市场洞察、战略地图、创新焦点、公司竞争战略、职能平台战略，制定业务设计"
+    blm_module: "业务设计"
+
+  - sheet_id: "5.4"
+    sheet_name: "5.4 主要风险分析"
+    agent_type: synthesis
+    depends_on: ["2.5", "5.3"]
+    mcp_fields: ["主要风险分析"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "识别战略相关关键风险，评估影响和应对策略"
+    process_hint: "综合各业务线数据，归纳风险分析"
+    blm_module: "业务设计"
+
+  # ============================================================
+  # 6.x 关键任务 (3 sheets)
+  # ============================================================
+  - sheet_id: "6.1"
+    sheet_name: "6.1 关键战略举措"
+    agent_type: strategy
+    depends_on: ["3.2", "3.3"]
+    mcp_fields: ["战略举措"]
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "将公司 CSF 转化为组织中承接的关键战略举措，支撑战略落地"
+    process_hint: "基于战略地图的使命愿景、中长期 CSF、中长期 KPI，结合遗留问题，制定关键战略举措"
+    blm_module: "关键任务"
+
+  - sheet_id: "6.2"
+    sheet_name: "6.2 年度战略目标"
+    agent_type: strategy
+    depends_on: ["3.2", "3.3", "6.1"]
+    mcp_fields: []
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "将战略举措分解为可执行、可衡量的年度战略目标"
+    process_hint: "基于战略地图的使命愿景、中长期 CSF、中长期 KPI，结合遗留问题，制定年度战略目标（注：公司填写+智能体辅助模式）"
+    blm_module: "关键任务"
+
+  - sheet_id: "6.3"
+    sheet_name: "6.3 年度重点项目"
+    agent_type: strategy
+    depends_on: ["3.2", "3.3", "6.1", "6.2"]
+    mcp_fields: []
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "将年度战略目标分解为一系列有关键里程碑和阶段交付的年度重点项目"
+    process_hint: "基于战略地图的使命愿景、中长期 CSF、中长期 KPI，结合遗留问题，制定年度重点项目（注：公司填写+智能体辅助模式）"
+    blm_module: "关键任务"
+
+  # ============================================================
+  # 7.x 正式组织 (2 sheets)
+  # ============================================================
+  - sheet_id: "7.1"
+    sheet_name: "7.1 组织架构图"
+    agent_type: synthesis
+    depends_on: ["6.2", "6.3"]
+    mcp_fields: []
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "根据战略需求设计组织架构、权责分配、协同机制"
+    process_hint: "根据年度战略目标，结合遗留问题，匹配组织架构图（需参考公司目前专业人员+岗位信息）（注：公司填写+智能体辅助模式）"
+    blm_module: "正式组织"
+
+  - sheet_id: "7.2"
+    sheet_name: "7.2 流程表"
+    agent_type: synthesis
+    depends_on: ["6.2", "6.3", "7.1"]
+    mcp_fields: []
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "优化重构业务流程，提升效率、支撑战略执行"
+    process_hint: "根据年度战略目标，结合遗留问题，匹配关键流程，制定流程表"
+    blm_module: "正式组织"
+
+  # ============================================================
+  # 8.x 人才 (2 sheets)
+  # ============================================================
+  - sheet_id: "8.1"
+    sheet_name: "8.1 人才盘点"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "根据战略需求和组织架构，进行人才盘点"
+    process_hint: "公司填写"
+    blm_module: "人才"
+
+  - sheet_id: "8.2"
+    sheet_name: "8.2 人才规划"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "围绕战略推进制定人才招聘计划、激励与保留政策"
+    process_hint: "公司填写"
+    blm_module: "人才"
+
+  # ============================================================
+  # 9.x 氛围文化 (2 sheets)
+  # ============================================================
+  - sheet_id: "9.1"
+    sheet_name: "9.1 企业文化"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "支撑战略执行的企业文化、氛围和行为准则"
+    process_hint: "公司填写"
+    blm_module: "氛围文化"
+
+  - sheet_id: "9.2"
+    sheet_name: "9.2 数字资源"
+    agent_type: null
+    depends_on: []
+    mcp_fields: []
+    schema_class: null
+    output_format: cells
+    enabled: false
+    description: "围绕战略执行规划数字资源投入"
+    process_hint: "公司填写"
+    blm_module: "氛围文化"
+
+  # ============================================================
+  # 10.x 财务预算 (1 sheet)
+  # ============================================================
+  - sheet_id: "10.1"
+    sheet_name: "10.1 财务预算"
+    agent_type: synthesis
+    depends_on: ["3.2", "6.1", "6.2", "6.3"]
+    mcp_fields: []
+    schema_class: CellMapOutput
+    output_format: cells
+    enabled: true
+    description: "预测战略执行过程中的公司财务预算"
+    process_hint: "基于战略地图和关键任务，结合遗留问题，制定财务预算（注：公司填写+智能体辅助模式）"
+    blm_module: "财务预算"

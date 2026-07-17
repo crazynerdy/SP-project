@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Excel Tab 的 View 层：表单渲染 + 结果渲染。只渲染，不调 agent。"""
 import os
+from datetime import datetime
 import html as _html
 import streamlit as st
 
@@ -36,7 +37,7 @@ def render_excel_form(idste_healthy):
     return {"request": req, "clicked": clicked, "retry": False}
 
 
-def render_excel_results(tool_call_stats, xlsx_path):
+def render_excel_results(tool_call_stats, xlsx_bytes):
     """渲染工具调用统计 + 下载区。"""
     if tool_call_stats:
         with st.container(border=True):
@@ -48,23 +49,22 @@ def render_excel_results(tool_call_stats, xlsx_path):
                 _sn = _html.escape(sn)
                 st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:baseline;padding:.3rem 0;font-size:.85rem;border-bottom:1px dashed var(--sp-border-light);'><span style='color:var(--sp-text-muted);'>{status} <b>{_sn}</b></span><span style='color:var(--sp-text);font-family:var(--sp-font-mono);font-size:.8rem;'>sp_data × {sp_n} · web_search × {ws_n}</span></div>", unsafe_allow_html=True)
 
-    if xlsx_path:
+    if xlsx_bytes:
+        req = st.session_state.get("last_request", "") or ""
+        fname = req.strip()[:40].replace("/", "_").replace("\\", "_").replace(":", "_") if req.strip() else f"SP分析报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        fname = f"{fname}.xlsx"
         with st.container(border=True):
             ui_theme.section_title("下载", "Excel 已就绪")
-            if os.path.exists(xlsx_path):
-                with open(xlsx_path, "rb") as f:
-                    st.download_button(
-                        os.path.basename(xlsx_path),
-                        f,
-                        file_name=os.path.basename(xlsx_path),
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                        type="primary",
-                        key="dl_excel",
-                    )
-                st.caption(f"{os.path.getsize(xlsx_path) / 1024:.1f} KB · XLSX")
-            else:
-                st.warning(f"文件不存在: {xlsx_path}")
+            st.download_button(
+                fname,
+                xlsx_bytes,
+                file_name=fname,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary",
+                key="dl_excel",
+            )
+            st.caption(f"{len(xlsx_bytes) / 1024:.1f} KB · XLSX")
 
 
 def render_excel_tab_with_sp2026(template_path, idste_healthy):
