@@ -58,7 +58,7 @@ Streamlit (app.py)
 - **当前账号 `杨金威` 权限非 101 角色**，只能看 3 个维度（公司 c + 部分 BUPL），公司部署前**建议改用服务账号**（延后）
 
 ### LLM (Qwen3.5_122B_A10B)
-- Base：`http://10.8.0.54:6003/v1`（**内网 VPN，不是 221.202.84.100:7092**）
+- Base：`<内网LLM地址>`（**VPN 内网地址不公开**，见 .env.example 模板）
 - Key：见 .env 的 LLM_API_KEY（不在此明文）
 - **支持 OpenAI 风格 native function-calling**（已实测）
 - **是 reasoning 模型**：`message.reasoning` 字段含思考链，消耗大量 completion token（极简问题 ~440 tokens）。小 max_tokens 下 content 易被截断为空（`finish_reason=length`）。所有"最终回答"型 chat 调用走 `chat_with_fallback`（小 max_tokens 先试，空/length 则大 max_tokens 重试）；`run_agent_loop` 用 `final_max_tokens` 兜底。
@@ -127,7 +127,7 @@ Streamlit (app.py)
 | 项 | 状态 | 应对 |
 |---|---|---|
 | LLM 持续不可达 | 当前现象 | 等 VPN 通后跑端到端 |
-| iDSTE 弱密码 `Aa123456` | 已知 | 内部自用可接受；部署前换服务账号 |
+| iDSTE 弱密码 `<已轮换>` | 已知 | 内部自用可接受；部署前换服务账号 |
 | LLM 选 sheet 是否准 | 待验证 | 看实际 xlsx 输出 sheet 名是否符合预期 |
 | 模板里预填的样例（3.1/6.1 等）会被覆盖 | 设计行为 | 用户可手动恢复（如果需要保留，在 agent 里加 merge 逻辑）|
 | xlsx_exporter 用 `delete_rows` 删模板行 | 性能 | 模板数据少，OK；大数据会慢 |

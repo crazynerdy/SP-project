@@ -1,0 +1,42 @@
+# 凭据（本机，勿提交）
+.env
+
+# 脚本抓取/生成的产物（含明文 Key 或可重新生成）
+mcp_admin.html
+mcp_admin_text.txt
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# 日志（含业务数据/人名）与生成产物
+*.log
+streamlit_stdout.txt
+streamlit_stderr.txt
+agent_run.log
+ppt_run.log
+cache/
+discover.json
+tools_summary.txt
+
+# Claude Code / Codex 内部状态（不允许入库）
+.superpowers/
+.claude/
+*.bak
+
+# 临时 review 产物
+review-*.diff
