@@ -20,6 +20,7 @@ from openpyxl import load_workbook
 from config import load_tasks, get_enabled_tasks
 from core.agent_utils import make_counting_wrapper, build_full_tool_map
 from core.strategic_context import StrategicContext, get_dependencies
+from core.errors import EngineError, ErrorCollector
 from schemas import get_schema_for_sheet
 
 
@@ -73,7 +74,7 @@ class WorkflowEngine:
 
         # 运行时状态
         self.tool_call_stats: dict = {"__all__": {}}
-        self.errors: list[dict] = []
+        self.error_collector = ErrorCollector()
         self.filled_sheets: list[str] = []
         self.out_xlsx_path: str | None = None
 
@@ -192,11 +193,11 @@ class WorkflowEngine:
         for task in sorted_tasks:
             self._execute_sheet(task, _tpl_sheet_names)
 
-        # 全部失败 -> raise
-        if not self.filled_sheets and self.errors:
+        # 全部失败 -> raise critical
+        if not self.filled_sheets and self.error_collector:
             raise RuntimeError(
                 f"所有 {len(sorted_tasks)} 个 sheet 都失败: "
-                + "; ".join(f"{e.get('sheet_id', e.get('sheet', '?'))}({e['error']})" for e in self.errors)
+                + "; ".join(str(e) for e in self.error_collector.errors)
             )
 
         # 生成 PPT
@@ -213,7 +214,7 @@ class WorkflowEngine:
             "pptx_path": pptx_path,
             "tool_call_stats": self.tool_call_stats,
             "filled_sheets": self.filled_sheets,
-            "errors": self.errors,
+            "errors": self.error_collector.errors,
             "context": self.context,
         }
 
@@ -337,14 +338,15 @@ class WorkflowEngine:
                 print(f"[engine] OK: {sheet_id} ({sheet_name}) -> {len(cells)} cells")
 
         except Exception as e:
-            err = {
-                "sheet_id": sheet_id,
-                "sheet_name": sheet_name,
-                "error": f"{type(e).__name__}: {e}",
-            }
-            self.errors.append(err)
+            error = EngineError(
+                message=f"{type(e).__name__}: {e}",
+                severity="warning",
+                sheet_id=sheet_id,
+                stage="execute",
+            )
+            self.error_collector.add(error)
             if self.verbose:
-                print(f"[engine] FAIL: {sheet_id} - {err['error']}")
+                print(f"[engine] FAIL: {sheet_id} - {error.message}")
 
     # ---- 工具方法 ----
     def _master_template_sheet(self, output_template: str,

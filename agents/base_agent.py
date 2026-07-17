@@ -12,6 +12,7 @@ from typing import Any
 
 from core.json_utils import parse_json
 from core.strategic_context import StrategicContext, get_dependencies
+from core.errors import EngineError
 from schemas import get_schema_for_sheet, CellMapOutput
 
 
@@ -245,6 +246,11 @@ class BaseAgent(ABC):
         result = parse_json(final_text)
 
         if not result:
-            result = {"cells": {}, "notes": "LLM 输出解析失败"}
+            raise EngineError(
+                message="LLM 输出解析失败",
+                severity="warning",
+                sheet_id=sheet_id,
+                stage="llm",
+            )
 
         return result

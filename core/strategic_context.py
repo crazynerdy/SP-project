@@ -7,6 +7,9 @@ Agent 不允许直接调 MCP，必须通过本模块获取数据。
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
+import logging
+
+logger = logging.getLogger("sp_agent")
 
 
 @dataclass
@@ -69,7 +72,8 @@ class StrategyContextBuilder:
         # 1) 团队信息
         try:
             ctx.company_profile = idste.sp_team_info() or {}
-        except Exception:
+        except Exception as exc:
+            logger.warning("MCP 调用失败: sp_team_info (%s)", exc)
             ctx.company_profile = {}
 
         # 2) dimension + menu
@@ -82,13 +86,14 @@ class StrategyContextBuilder:
                 ctx.dim_info = first if isinstance(first, str) else (
                     first.get("dim_info") or first.get("id") or "c"
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("MCP 调用失败: sp_dimension (%s)", exc)
 
         try:
             menu = idste.sp_data_menu(ctx.dim_info)
             ctx.available_tables = idste._find_table_keys(menu)
-        except Exception:
+        except Exception as exc:
+            logger.warning("MCP 调用失败: sp_data_menu (%s)", exc)
             ctx.available_tables = []
 
         # 3) 拉数据表 → mcp_data
@@ -105,7 +110,8 @@ class StrategyContextBuilder:
             try:
                 data = idste.sp_data(ctx.dim_info, tk, self.year)
                 ctx.mcp_data[name] = data
-            except Exception:
+            except Exception as exc:
+                logger.warning("MCP 调用失败: sp_data(dim=%s, table=%s, year=%s) (%s)", ctx.dim_info, tk, self.year, exc)
                 ctx.mcp_data[name] = {"error": f"sp_data 拉取失败: {tk}"}
 
         # 4) 结构化提取
