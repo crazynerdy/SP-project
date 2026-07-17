@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# pre-commit — 阻止将敏感/临时文件提交到仓库
+# 安装：ln -s ../../scripts/pre-commit .git/hooks/pre-commit
+# 或：cp scripts/pre-commit .git/hooks/pre-commit
+set -euo pipefail
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+blocked=0
+
+# 检查 .env（凭据文件）
+for f in $(git diff --cached --name-only); do
+    case "$f" in
+        .env|*.env.local|*.env.secret)
+            echo -e "${RED}[pre-commit] 阻止：$f（凭据文件不允许提交）${NC}"
+            blocked=1
+            ;;
+        *.log|streamlit_stdout.txt|streamlit_stderr.txt)
+            echo -e "${RED}[pre-commit] 阻止：$f（日志文件不允许提交）${NC}"
+            blocked=1
+            ;;
+        __pycache__/*|*.pyc)
+            echo -e "${RED}[pre-commit] 阻止：$f（Python 缓存不允许提交）${NC}"
+            blocked=1
+            ;;
+    esac
+done
+
+if [ "$blocked" -eq 1 ]; then
+    echo -e "${RED}[pre-commit] 提交已阻止。请移除上述文件后重试。${NC}"
+    exit 1
+fi
+
+echo "[pre-commit] OK"
+exit 0
