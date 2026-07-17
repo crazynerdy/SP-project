@@ -7,8 +7,7 @@ import os
 import streamlit as st
 
 from core.envutil import run_with_timeout
-from controllers.agent import generate_pptx_from_xlsx
-from models import xlsx_reader
+from models import pptx_generator, xlsx_reader
 from views import ppt_view
 
 
@@ -32,7 +31,7 @@ def run(history):
                     return
 
                 result = run_with_timeout(
-                    lambda: generate_pptx_from_xlsx(
+                    lambda: pptx_generator.generate_pptx_from_xlsx(
                         pv["request"] or "生成完整分析报告的演示文稿",
                         xlsx_path,
                         enable_images=pv["enable_images"],

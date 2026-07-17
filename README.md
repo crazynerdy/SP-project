@@ -83,8 +83,8 @@ cp .env.example .env
 streamlit run app.py
 # 浏览器打开 http://localhost:8501
 
-# 方式 2：命令行单次跑 Excel 流程
-python -m controllers.agent "分析2025年公司SP战略规划完成度"
+# 方式 2：命令行单次跑 Excel 流程（WorkflowEngine DAG 模式）
+python -m sp_agent "2.2 行业趋势分析表"
 
 # 开发模式（ui_theme.py 热重载）
 DEV=true streamlit run app.py

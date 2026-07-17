@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Streamlit Web UI 入口（瘦）：page config + 主题 + 骨架 + 路由。
 
-View 层在 views/，Controller 层在 controllers/，业务编排见 controllers/agent.py。
+View 层在 views/，Controller 层在 controllers/，业务编排由 core/workflow_engine.py 的 WorkflowEngine 负责。
 视觉层由 views/ui_theme.py 负责；本文件只做页面骨架与 Tab 路由。
 """
 import os

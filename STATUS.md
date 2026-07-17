@@ -222,11 +222,11 @@ Streamlit (app.py)
 ### 验证
 - [x] 各层 import 冒烟（models/controllers/views/core 全量）
 - [x] `streamlit run app.py` 启动成功、无 traceback
-- [x] `controllers.agent` 5 个导出函数可用
+- [x] `controllers.agent` 已删除，入口统一为 `python -m sp_agent`（WorkflowEngine DAG 模式）
 - [ ] 实际 Excel/PPT 端到端（依赖 VPN/LLM，环境就绪后跑）
 
 ### 命令行入口变更
-`python agent.py "..."` -> `python -m controllers.agent "..."`
+`python agent.py "..."` -> `python -m sp_agent "..."`（WorkflowEngine DAG 统一入口）
 
 
 ## v5 增量（2026-07-15）：SP 2026 智能体自动填写
