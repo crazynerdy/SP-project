@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 
-from core.paths import resource
+from core.paths import resource, PROJECT_ROOT
 
 NODE_BIN = os.environ.get("NODE_BIN", "node")
 RENDER_JS = resource("render.js")
@@ -52,7 +52,7 @@ def build_pptx(slide_spec, output_dir="output", prefix="", verbose=False):
     try:
         if not os.path.exists(RENDER_JS):
             raise FileNotFoundError(
-                f"render.js 不存在: {RENDER_JS}\n请确认 D:\\memory 目录完整"
+                f"render.js 不存在: {RENDER_JS}\n请确认项目根目录完整: {PROJECT_ROOT}"
             )
         if verbose:
             print(f"[pptx] spawn: {NODE_BIN} {RENDER_JS} {tmp_json} {out_pptx}")

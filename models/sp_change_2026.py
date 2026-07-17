@@ -135,8 +135,9 @@ def resolve_table_key(template_name: str, menu, keyword: str | None = None) -> s
 
 if __name__ == "__main__":
     import sys
+    from core.envutil import env
 
-    DRIVE_FILE = r"D:\Desktop\gg\战略规划SP变更需求-6.5 版（产品需求沟通确认 2.0）.xlsx"
+    DRIVE_FILE = env("DRIVE_FILE", r"")
 
     print("=" * 60)
     print("== [1] parse_requirement_xlsx 离线单元测试 ==")
