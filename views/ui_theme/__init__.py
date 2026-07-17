@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""views/ui_theme — 兼容 Shim。
-
-内容已拆分到 views/ui_theme/ 包 (PR6 of docs/REFACTOR_CODEX_2026.md)。
-保留本文件以确保旧的 `from views import ui_theme` 用法继续工作。
+"""views/ui_theme — 从 views/ui_theme.py (612 lines) 拆分而来 (PR6)。
 """
 from views.ui_theme.tokens import _load_theme, _hex, _build_theme, _root_vars
 from views.ui_theme.injector import inject, _build_css

@@ -21,12 +21,9 @@ from config import load_tasks, get_enabled_tasks
 from core.agent_utils import make_counting_wrapper, build_full_tool_map
 from core.strategic_context import StrategicContext, get_dependencies
 from core.errors import EngineError, ErrorCollector
+from core.engine.topology import topological_sort, CycleError
+from core.engine.sheet_matcher import master_template_sheet
 from schemas import get_schema_for_sheet
-
-
-class CycleError(Exception):
-    """拓扑排序检测到环。"""
-    pass
 
 
 class WorkflowEngine:
@@ -94,54 +91,8 @@ class WorkflowEngine:
 
     # ---- 拓扑排序 ----
     def topological_sort(self) -> list[dict]:
-        """Kahn 算法拓扑排序，返回合法执行顺序。
-
-        Returns:
-            list[dict]: 排序后的任务列表（仅 enabled + agent_type 不为 null 的）
-
-        Raises:
-            CycleError: 检测到环
-        """
-        enabled = [t for t in self.tasks if t.get("enabled", False)]
-        agent_tasks = [t for t in enabled if t.get("agent_type") is not None]
-
-        # 构建图
-        in_degree: dict[str, int] = {}
-        adj: dict[str, list[str]] = {}
-        id_to_task: dict[str, dict] = {}
-
-        for t in agent_tasks:
-            sid = t["sheet_id"]
-            in_degree[sid] = 0
-            adj[sid] = []
-            id_to_task[sid] = t
-
-        for t in agent_tasks:
-            sid = t["sheet_id"]
-            for dep in t.get("depends_on", []):
-                if dep in id_to_task:
-                    in_degree[sid] += 1
-                    adj[dep].append(sid)
-
-        # Kahn
-        queue = [sid for sid, deg in in_degree.items() if deg == 0]
-        sorted_ids = []
-
-        while queue:
-            u = queue.pop(0)
-            sorted_ids.append(u)
-            for v in adj.get(u, []):
-                in_degree[v] -= 1
-                if in_degree[v] == 0:
-                    queue.append(v)
-
-        if len(sorted_ids) != len(agent_tasks):
-            remaining = set(id_to_task.keys()) - set(sorted_ids)
-            raise CycleError(
-                f"拓扑排序检测到环，涉及 sheet: {sorted(remaining)}"
-            )
-
-        return [id_to_task[sid] for sid in sorted_ids]
+        """Kahn 算法拓扑排序，返回合法执行顺序。"""
+        return topological_sort(self.tasks)
 
     # ---- 主入口 ----
     def run(self, sheet_ids: list[str] | None = None) -> dict:
@@ -352,34 +303,7 @@ class WorkflowEngine:
     def _master_template_sheet(self, output_template: str,
                                available_sheets: list[str]) -> str:
         """模糊匹配 D 列模板名 → 主模板实际 sheet 名。"""
-        import re
-        raw = output_template.strip()
-        s = raw
-        for suffix in ("表", "图"):
-            if s.endswith(suffix):
-                s = s[:-len(suffix)].strip()
-                break
-        # 精确
-        for name in available_sheets:
-            if name.strip() == s:
-                return name
-        # 前缀
-        for name in available_sheets:
-            n = name.strip()
-            if n and s.startswith(n):
-                return name
-        # CJK chunk
-        chunks = sorted(set(re.findall(r"[一-鿿]{2,}", s)), key=len, reverse=True)
-        best = None
-        best_len = 0
-        for name in available_sheets:
-            n = name.strip()
-            for chunk in chunks:
-                if chunk in n and len(chunk) > best_len:
-                    best = name
-                    best_len = len(chunk)
-                    break
-        return best if best is not None else s
+        return master_template_sheet(output_template, available_sheets)
 
     def _generate_pptx(self) -> str | None:
         """生成 PPT（后置步骤）。"""
